@@ -21,7 +21,7 @@ public class OpenTradeEventHandler {
     @SubscribeEvent
     public void guiOpenEvent(GuiOpenEvent event) {
         if (event.getGui() instanceof GuiMerchant) {
-            event.setGui(new BetterGuiMerchant(mc.player.inventory, (GuiMerchant)event.getGui(), mc.world));
+            event.setGui(new BetterGuiMerchant(mc.thePlayer.inventory, (GuiMerchant)event.getGui(), mc.theWorld));
         }
     }
 }

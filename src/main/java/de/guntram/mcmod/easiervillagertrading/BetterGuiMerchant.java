@@ -41,10 +41,10 @@ public class BetterGuiMerchant extends GuiMerchant {
         if (ConfigurationHandler.showLeft()) {
             xBase=-ConfigurationHandler.leftPixelOffset();
             if (xBase==0)
-                xBase=-this.getXSize();
+                xBase=-this.xSize;
         }
         else
-            xBase=this.getXSize()+5;
+            xBase=this.xSize+5;
         tradeOK=new ItemStack(Item.getItemById(351), 1, 2);
         tradeNOK=new ItemStack(Item.getItemById(351), 1, 1);
     }
@@ -69,7 +69,7 @@ public class BetterGuiMerchant extends GuiMerchant {
             return;
         int topAdjust=getTopAdjust(trades.size());
         String s = trades.size()+" trades";
-        this.fontRenderer.drawString(s, xBase, -topAdjust, 0xff00ff);
+        this.fontRendererObj.drawString(s, xBase, -topAdjust, 0xff00ff);
         // First draw all items, then all tooltips. This is extra effort,
         // but we don't want any items in front of any tooltips.
         RenderHelper.enableStandardItemLighting();
@@ -108,8 +108,8 @@ public class BetterGuiMerchant extends GuiMerchant {
                 }
                 String shownEnchants=enchants.toString();
                 if (xBase<0)
-                    shownEnchants=fontRenderer.trimStringToWidth(shownEnchants, -xBase-textXpos-5);
-                fontRenderer.drawString(shownEnchants, xBase+textXpos, i*lineHeight-topAdjust+24, 0xffff00);
+                    shownEnchants=fontRendererObj.trimStringToWidth(shownEnchants, -xBase-textXpos-5);
+                fontRendererObj.drawString(shownEnchants, xBase+textXpos, i*lineHeight-topAdjust+24, 0xffff00);
             }
             drawItem(trade.isRecipeDisabled() ? tradeNOK : tradeOK, xBase+okNokXpos, i*lineHeight-topAdjust+titleDistance);
         }
@@ -136,7 +136,7 @@ public class BetterGuiMerchant extends GuiMerchant {
         if (stack==null)
             return;
         itemRender.renderItemAndEffectIntoGUI(stack, x, y);
-        itemRender.renderItemOverlays(fontRenderer, stack, x, y);
+        itemRender.renderItemOverlays(fontRendererObj, stack, x, y);
     }
     
     private void drawTooltip(ItemStack stack, int x, int y, int mousex, int mousey) {
@@ -200,14 +200,14 @@ public class BetterGuiMerchant extends GuiMerchant {
     }
     
     private boolean hasEnoughItemsInInventory(ItemStack stack) {
-        int remaining=stack.getCount();
+        int remaining=stack.stackSize;
         for (int i=inventorySlots.inventorySlots.size()-36; i<inventorySlots.inventorySlots.size(); i++) {
             ItemStack invstack=inventorySlots.getSlot(i).getStack();
             if (invstack==null)
                 continue;
             if (areItemStacksMergable(stack, invstack)) {
                 //System.out.println("taking "+invstack.getCount()+" items from slot # "+i);
-                remaining-=invstack.getCount();
+                remaining-=invstack.stackSize;
             }
             if (remaining<=0)
                 return true;
@@ -216,17 +216,17 @@ public class BetterGuiMerchant extends GuiMerchant {
     }
 
     private boolean canReceiveOutput(ItemStack stack) {
-        int remaining=stack.getCount();
+        int remaining=stack.stackSize;
         for (int i=inventorySlots.inventorySlots.size()-36; i<inventorySlots.inventorySlots.size(); i++) {
             ItemStack invstack=inventorySlots.getSlot(i).getStack();
-            if (invstack==null || invstack.isEmpty()) {
+            if (invstack==null || invstack.stackSize <= 0) {
                 //System.out.println("can put result into empty slot "+i);
                 return true;
             }
             if (areItemStacksMergable(stack, invstack)
-            &&  stack.getMaxStackSize() >= stack.getCount() + invstack.getCount()) {
+            &&  stack.getMaxStackSize() >= stack.stackSize + invstack.stackSize) {
                 //System.out.println("Can merge "+(invstack.getMaxStackSize()-invstack.getCount())+" items with slot "+i);
-                remaining-=(invstack.getMaxStackSize()-invstack.getCount());
+                remaining-=(invstack.getMaxStackSize()-invstack.stackSize);
             }
             if (remaining<=0)
                 return true;
@@ -261,16 +261,16 @@ public class BetterGuiMerchant extends GuiMerchant {
      * after the transaction. May be -1 if nothing needs to be put back.
      */
     private int fillSlot(int slot, ItemStack stack) {
-        int remaining=stack.getCount();
+        int remaining=stack.stackSize;
         for (int i=inventorySlots.inventorySlots.size()-36; i<inventorySlots.inventorySlots.size(); i++) {
             ItemStack invstack=inventorySlots.getSlot(i).getStack();
             if (invstack==null)
                 continue;
             boolean needPutBack=false;
             if (areItemStacksMergable(stack, invstack)) {
-                if (stack.getCount()+invstack.getCount() > stack.getMaxStackSize())
+                if (stack.stackSize+invstack.stackSize > stack.getMaxStackSize())
                     needPutBack=true;
-                remaining-=invstack.getCount();
+                remaining-=invstack.stackSize;
                 // System.out.println("taking "+invstack.getCount()+" items from slot # "+i+", remaining is now "+remaining);
                 slotClick(i);
                 slotClick(slot);
@@ -297,18 +297,18 @@ public class BetterGuiMerchant extends GuiMerchant {
     }
     
     private void getslot(int slot, ItemStack stack, int... forbidden) {
-        int remaining=stack.getCount();
+        int remaining=stack.stackSize;
         slotClick(slot);
         for (int i=inventorySlots.inventorySlots.size()-36; i<inventorySlots.inventorySlots.size(); i++) {
             ItemStack invstack=inventorySlots.getSlot(i).getStack();
-            if (invstack==null || invstack.isEmpty()) {
+            if (invstack==null || invstack.stackSize <= 0) {
                 continue;
             }
             if (areItemStacksMergable(stack, invstack)
-                && invstack.getCount() < invstack.getMaxStackSize()
+                && invstack.stackSize < invstack.getMaxStackSize()
             ) {
                 // System.out.println("Can merge "+(invstack.getMaxStackSize()-invstack.getCount())+" items with slot "+i);
-                remaining-=(invstack.getMaxStackSize()-invstack.getCount());
+                remaining-=(invstack.getMaxStackSize()-invstack.stackSize);
                 slotClick(i);
             }
             if (remaining<=0)
@@ -325,7 +325,7 @@ public class BetterGuiMerchant extends GuiMerchant {
             if (isForbidden)
                 continue;
             ItemStack invstack=inventorySlots.getSlot(i).getStack();
-            if (invstack==null || invstack.isEmpty()) {
+            if (invstack==null || invstack.stackSize <= 0) {
                 slotClick(i);
                 // System.out.println("putting result into empty slot "+i);
                 return;
@@ -335,6 +335,6 @@ public class BetterGuiMerchant extends GuiMerchant {
     
     private void slotClick(int slot) {
         System.out.println("Clicking slot "+slot);
-        mc.playerController.windowClick(mc.player.openContainer.windowId, slot, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, slot, 0, ClickType.PICKUP, mc.thePlayer);
     }
 }
